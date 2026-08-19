@@ -1,0 +1,63 @@
+name: Build and Release Obsidian Plugin
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Create release zip
+        run: |
+          mkdir -p obsidian-private-plugin-hub
+          cp manifest.json main.js styles.css obsidian-private-plugin-hub/ 2>/dev/null || cp manifest.json main.js obsidian-private-plugin-hub/
+          zip -r obsidian-private-plugin-hub.zip obsidian-private-plugin-hub/
+
+      - name: Upload Artifact (For main branch pushes)
+        uses: actions/upload-artifact@v4
+        with:
+          name: obsidian-private-plugin-hub
+          path: |
+            manifest.json
+            main.js
+            styles.css
+            obsidian-private-plugin-hub.zip
+
+      - name: Create GitHub Release (On tag push)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            manifest.json
+            main.js
+            styles.css
+            obsidian-private-plugin-hub.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
