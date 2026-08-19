@@ -1,0 +1,27 @@
+{
+  "updatedAt": "2026-08-19T22:00:00Z",
+  "plugins": [
+    {
+      "id": "my-custom-task-manager",
+      "name": "Custom Task Manager",
+      "author": "s-ikari",
+      "version": "1.1.0",
+      "minAppVersion": "0.15.0",
+      "description": "Internal task management board integrating directly with personal git repository.",
+      "icon": "check-square",
+      "url": "https://your-server.com/hub/plugins/my-custom-task-manager/",
+      "tags": ["productivity", "tasks"]
+    },
+    {
+      "id": "vault-analytics-exporter",
+      "name": "Vault Analytics Exporter",
+      "author": "s-ikari",
+      "version": "1.0.2",
+      "minAppVersion": "0.15.0",
+      "description": "Exports link stats, word counts, and daily notes progress to CSV/JSON.",
+      "icon": "bar-chart-2",
+      "url": "https://your-server.com/hub/plugins/vault-analytics-exporter/",
+      "tags": ["analytics", "export"]
+    }
+  ]
+}

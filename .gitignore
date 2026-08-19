@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# Build output (optional to commit or ignore, usually ignored or kept as release)
+# main.js
+
+# OS files
+.DS_Store
+*.log

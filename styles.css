@@ -1,0 +1,413 @@
+/* Private Plugin Hub Styles - Official Community Plugin Browser Replica */
+
+.modal.private-hub-modal {
+	width: 90vw;
+	max-width: 1050px;
+	height: 85vh;
+	max-height: 800px;
+	padding: 0;
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.private-hub-modal .modal-content {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	padding: 24px;
+	background-color: var(--background-primary);
+}
+
+/* Header */
+.private-hub-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	margin-bottom: 16px;
+}
+
+.private-hub-title-container {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.private-hub-title-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 10px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.private-hub-title-icon svg {
+	width: 24px;
+	height: 24px;
+}
+
+.private-hub-title {
+	margin: 0;
+	font-size: 1.4rem;
+	font-weight: 700;
+	color: var(--text-normal);
+}
+
+.private-hub-subtitle {
+	font-size: 0.85rem;
+	color: var(--text-muted);
+}
+
+.private-hub-stats {
+	font-size: 0.85rem;
+	font-weight: 600;
+	padding: 6px 12px;
+	border-radius: 20px;
+	background-color: var(--background-secondary-alt);
+	color: var(--text-muted);
+	border: 1px solid var(--background-modifier-border);
+}
+
+/* Controls (Search, Tabs, Actions) */
+.private-hub-controls {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 20px;
+	flex-wrap: wrap;
+}
+
+.private-hub-search-wrapper {
+	position: relative;
+	flex: 1;
+	min-width: 260px;
+}
+
+.private-hub-search-icon {
+	position: absolute;
+	left: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--text-muted);
+	display: flex;
+	align-items: center;
+	pointer-events: none;
+}
+
+.private-hub-search-icon svg {
+	width: 18px;
+	height: 18px;
+}
+
+.private-hub-search-input {
+	width: 100%;
+	padding: 8px 12px 8px 38px !important;
+	border-radius: 8px !important;
+	background-color: var(--background-secondary) !important;
+	border: 1px solid var(--background-modifier-border) !important;
+	color: var(--text-normal) !important;
+	font-size: 0.95rem;
+	transition: all 0.2s ease;
+}
+
+.private-hub-search-input:focus {
+	border-color: var(--interactive-accent) !important;
+	box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}
+
+/* Tabs */
+.private-hub-tabs {
+	display: flex;
+	background-color: var(--background-secondary-alt);
+	padding: 4px;
+	border-radius: 8px;
+	border: 1px solid var(--background-modifier-border);
+}
+
+.private-hub-tab {
+	padding: 6px 14px !important;
+	border-radius: 6px !important;
+	background: transparent !important;
+	border: none !important;
+	color: var(--text-muted) !important;
+	font-size: 0.88rem;
+	font-weight: 500;
+	cursor: pointer;
+	box-shadow: none !important;
+	transition: all 0.2s ease;
+}
+
+.private-hub-tab:hover {
+	color: var(--text-normal) !important;
+}
+
+.private-hub-tab.is-active {
+	background-color: var(--background-primary) !important;
+	color: var(--interactive-accent) !important;
+	font-weight: 600;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Actions */
+.private-hub-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.private-hub-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 14px !important;
+	border-radius: 8px !important;
+	font-size: 0.88rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.private-hub-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Plugin List Container */
+.private-hub-plugin-list {
+	flex: 1;
+	overflow-y: auto;
+	padding-right: 4px;
+}
+
+/* Grid Layout */
+.private-hub-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+	gap: 16px;
+}
+
+/* Plugin Card */
+.private-hub-card {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	padding: 16px;
+	border-radius: 10px;
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.private-hub-card:hover {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+	transform: translateY(-2px);
+}
+
+.private-hub-card-header {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	margin-bottom: 10px;
+}
+
+.private-hub-card-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border-radius: 8px;
+	background-color: var(--background-primary);
+	color: var(--interactive-accent);
+	border: 1px solid var(--background-modifier-border);
+	flex-shrink: 0;
+}
+
+.private-hub-card-icon svg {
+	width: 20px;
+	height: 20px;
+}
+
+.private-hub-card-title-block {
+	flex: 1;
+	min-width: 0;
+}
+
+.private-hub-card-title-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.private-hub-card-title {
+	font-weight: 700;
+	font-size: 1.05rem;
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.private-hub-card-meta {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 0.8rem;
+	color: var(--text-muted);
+	margin-top: 2px;
+	flex-wrap: wrap;
+}
+
+.private-hub-author {
+	font-weight: 500;
+}
+
+.private-hub-version {
+	font-family: var(--font-monospace);
+}
+
+/* Badges */
+.private-hub-badge {
+	font-size: 0.72rem;
+	font-weight: 700;
+	padding: 2px 8px;
+	border-radius: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.badge-update {
+	background-color: rgba(46, 204, 113, 0.15);
+	color: #2ecc71;
+	border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.badge-installed {
+	background-color: rgba(52, 152, 219, 0.15);
+	color: #3498db;
+	border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.badge-disabled {
+	background-color: var(--background-modifier-border);
+	color: var(--text-muted);
+}
+
+.private-hub-card-desc {
+	font-size: 0.88rem;
+	color: var(--text-muted);
+	line-height: 1.45;
+	margin: 8px 0 16px 0;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.private-hub-card-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-top: 10px;
+	border-top: 1px dashed var(--background-modifier-border);
+}
+
+.private-hub-card-tags {
+	display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+}
+
+.private-hub-tag {
+	font-size: 0.72rem;
+	padding: 2px 6px;
+	border-radius: 4px;
+	background-color: var(--background-primary);
+	color: var(--text-muted);
+}
+
+.private-hub-card-buttons {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.private-hub-action-btn {
+	padding: 6px 12px !important;
+	border-radius: 6px !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	cursor: pointer;
+}
+
+.private-hub-action-btn.is-update {
+	background-color: #2ecc71 !important;
+	color: #ffffff !important;
+}
+
+.private-hub-action-btn.is-update:hover {
+	background-color: #27ae60 !important;
+}
+
+.private-hub-action-btn-icon {
+	padding: 6px !important;
+	border-radius: 6px !important;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.private-hub-action-btn-icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* Loading & Empty States */
+.private-hub-loading,
+.private-hub-empty,
+.private-hub-error {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 60px 20px;
+	text-align: center;
+	color: var(--text-muted);
+}
+
+.private-hub-spinner svg {
+	width: 32px;
+	height: 32px;
+	animation: spin 1s linear infinite;
+	color: var(--interactive-accent);
+	margin-bottom: 12px;
+}
+
+@keyframes spin {
+	100% { transform: rotate(360deg); }
+}
+
+.private-hub-empty-icon svg,
+.private-hub-error-icon svg {
+	width: 48px;
+	height: 48px;
+	color: var(--text-muted);
+	margin-bottom: 12px;
+}
+
+.private-hub-error-icon svg {
+	color: var(--text-error, #e74c3c);
+}
+
+.private-hub-url-hint {
+	font-family: var(--font-monospace);
+	font-size: 0.8rem;
+	opacity: 0.8;
+}
