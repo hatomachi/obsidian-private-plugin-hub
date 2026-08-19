@@ -1,0 +1,10 @@
+services:
+  private-plugin-hub-server:
+    image: nginx:alpine
+    container_name: private-plugin-hub-server
+    ports:
+      - "8888:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./hub:/usr/share/nginx/html/hub
+    restart: always

@@ -10,15 +10,15 @@ An internal/private plugin marketplace for Obsidian, replicating the official Co
 - **1-Click Install & Update**: Download, install, enable, disable, or uninstall custom plugins with a single click.
 - **Hot Reloading**: Automatically reloads updated plugins dynamically without restarting Obsidian.
 - **Bulk Updates**: **"Update All"** button for updating all custom plugins at once.
-- **Simple Hosting Backend**: Works with any standard static file server (Nginx, Caddy, S3, Cloudflare R2, EC2). No complex database or API required.
-- **Automated Deployment**: 1-command deployment scripts for Windows (PowerShell) and macOS/Linux.
+- **Simple Hosting Backend**: Works with any standard static file server (Nginx, Caddy, S3, Cloudflare R2, Docker). No complex database or API required.
+- **Automated Deployment**: Cross-platform deployment tools (`publish.py` and `publish.ps1`).
 
 ---
 
 ## 🚀 Client Installation Guide (For Team Members)
 
-1. Download or build `manifest.json`, `main.js`, and `styles.css`.
-2. Place them into your vault's plugin directory:
+1. Download the latest `obsidian-private-plugin-hub.zip` from [GitHub Releases](https://github.com/hatomachi/obsidian-private-plugin-hub/releases).
+2. Extract into your vault's plugin directory:
    ```text
    .obsidian/plugins/obsidian-private-plugin-hub/
    ```
@@ -31,58 +31,29 @@ An internal/private plugin marketplace for Obsidian, replicating the official Co
 
 ---
 
-## 🛠️ Remote Server Structure & Registry Format
+## 🐳 Server Setup Guide (Docker & Nginx)
 
-Host static files on Nginx or any Web server with CORS headers enabled (`Access-Control-Allow-Origin: *`).
+For complete instructions on setting up a CORS-enabled Nginx static file server using Docker, see [docs/SERVER_SETUP.md](docs/SERVER_SETUP.md).
 
-### Remote Directory Layout
-```text
-https://your-server.com/hub/
-  ├── registry.json
-  └── plugins/
-      ├── my-custom-plugin/
-      │   ├── manifest.json
-      │   ├── main.js
-      │   └── styles.css
-      └── another-plugin/
-          ├── manifest.json
-          ├── main.js
-          └── styles.css
-```
-
-### `registry.json` Format Example
-```json
-{
-  "updatedAt": "2026-08-19T22:00:00Z",
-  "plugins": [
-    {
-      "id": "my-custom-plugin",
-      "name": "My Custom Plugin",
-      "author": "s-ikari",
-      "version": "1.0.1",
-      "minAppVersion": "0.15.0",
-      "description": "Internal team productivity tool.",
-      "icon": "sparkles",
-      "url": "https://your-server.com/hub/plugins/my-custom-plugin/",
-      "tags": ["productivity", "internal"]
-    }
-  ]
-}
+Quick start with Docker Compose:
+```bash
+cd scripts/docker-server
+docker compose up -d
 ```
 
 ---
 
 ## 📦 Developer Deployment (1-Command Publish)
 
-### Windows (PowerShell)
-```powershell
-.\scripts\publish.ps1 -ServerHost "your-ec2-domain.com"
-```
+### Cross-platform Python Script (`scripts/publish.py`)
+Run from your custom plugin project directory to build and deploy to your remote/local hub:
 
-### Server Side Registry Generator (Python)
-Run on your remote server to auto-generate `registry.json`:
 ```bash
-python3 scripts/update_registry.py --hub-dir /var/www/hub --base-url https://your-server.com/hub
+# Publish plugin from current directory
+python3 scripts/publish.py --dest-hub /path/to/server/hub --base-url http://your-server:8888/hub
+
+# Simulate version bump (e.g., test update flow)
+python3 scripts/publish.py --bump 1.0.2
 ```
 
 ---
@@ -92,9 +63,6 @@ python3 scripts/update_registry.py --hub-dir /var/www/hub --base-url https://you
 ```bash
 # Install dependencies
 npm install
-
-# Development watch mode
-npm run dev
 
 # Production build
 npm run build
