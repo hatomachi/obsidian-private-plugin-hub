@@ -1,6 +1,6 @@
 {
   "name": "obsidian-private-plugin-hub",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Private Plugin Hub for downloading and updating custom Obsidian plugins.",
   "main": "main.js",
   "scripts": {
