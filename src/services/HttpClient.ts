@@ -10,12 +10,69 @@ export class HttpClient {
 	static async request(param: RequestUrlParam | string, mode: 'default' | 'direct' = 'default'): Promise<RequestUrlResponse> {
 		const options: RequestUrlParam = typeof param === 'string' ? { url: param } : param;
 
-		if (mode === 'direct') {
-			return this.nodeDirectRequest(options);
+		let response: RequestUrlResponse;
+		try {
+			if (mode === 'direct') {
+				response = await this.nodeDirectRequest(options);
+			} else {
+				// Default mode using Obsidian requestUrl (uses Electron Chromium network stack)
+				// Set throw: false so we can inspect headers and body on 4xx/5xx responses
+				response = await requestUrl({ throw: false, ...options });
+			}
+		} catch (error) {
+			console.error(`[PrivatePluginHub:HTTP] Network request failed for ${options.url} (Mode: ${mode}):`, error);
+			throw error;
 		}
 
-		// Default mode using Obsidian requestUrl (uses Electron Chromium network stack)
-		return requestUrl(options);
+		if (response.status >= 400) {
+			this.logDiagnostic(options.url, mode, response);
+		}
+
+		return response;
+	}
+
+	/**
+	 * Output diagnostic log to DevTools console when HTTP request fails (status >= 400)
+	 */
+	private static logDiagnostic(url: string, mode: string, res: RequestUrlResponse): void {
+		const headers = res.headers || {};
+		const text = res.text || '';
+
+		// Check GitHub API rate limit headers and body
+		const remaining = headers['x-ratelimit-remaining'];
+		const limit = headers['x-ratelimit-limit'];
+		const reset = headers['x-ratelimit-reset'];
+		const isRateLimit = remaining === '0' || text.includes('API rate limit exceeded');
+
+		// Check proxy headers and HTML block page
+		const serverHeader = headers['server'] || '';
+		const viaHeader = headers['via'] || '';
+		const contentType = headers['content-type'] || '';
+		const isHtmlBlock = contentType.includes('text/html') && (text.includes('Blocked') || text.includes('Forbidden') || text.includes('Filter') || text.includes('Policy') || text.includes('Proxy') || text.includes('Zscaler'));
+		const isKnownProxy = /zscaler|squid|bluecoat|envoy|nginx|apache/i.test(serverHeader) || Boolean(viaHeader);
+
+		let cause = `HTTP ${res.status}`;
+		if (res.status === 403) {
+			if (isRateLimit) {
+				const resetTime = reset ? new Date(parseInt(reset, 10) * 1000).toLocaleTimeString() : 'unknown';
+				cause = `[GitHub API Rate Limit Exceeded] Remaining: 0 / ${limit || 60}, Resets at: ${resetTime}`;
+			} else if (isKnownProxy || isHtmlBlock) {
+				cause = `[Corporate Proxy / Security Filter Block] Server: "${serverHeader || 'unknown'}", Via: "${viaHeader || 'none'}"`;
+			} else {
+				cause = `[HTTP 403 Forbidden] Access denied or blocked by server/WAF.`;
+			}
+		}
+
+		console.group(`[PrivatePluginHub:HTTP] HTTP ${res.status} on ${url} (Mode: ${mode})`);
+		console.warn(`Diagnosis: ${cause}`);
+		console.log('URL:', url);
+		console.log('Mode:', mode);
+		console.log('Status:', res.status);
+		console.log('Headers:', headers);
+		if (text) {
+			console.log('Body Preview:', text.length > 500 ? text.slice(0, 500) + '...' : text);
+		}
+		console.groupEnd();
 	}
 
 	/**

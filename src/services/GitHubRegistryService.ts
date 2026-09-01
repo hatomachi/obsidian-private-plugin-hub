@@ -166,10 +166,15 @@ export class GitHubRegistryService {
 			}
 
 			if (res.status === 403) {
-				throw new Error('GitHub API rate limit exceeded (60 requests/hour for unauthenticated requests). Please wait a while.');
+				const isRateLimit = res.headers['x-ratelimit-remaining'] === '0' || (res.text && res.text.includes('API rate limit exceeded'));
+				if (isRateLimit) {
+					const resetTime = res.headers['x-ratelimit-reset'] ? new Date(parseInt(res.headers['x-ratelimit-reset'], 10) * 1000).toLocaleTimeString() : '';
+					throw new Error(`GitHub API rate limit exceeded (60 req/h)${resetTime ? `, resets at ${resetTime}` : ''}. (See DevTools console)`);
+				}
+				throw new Error(`GitHub returned HTTP 403 Forbidden for "${account}". Proxy block or access denied. (See DevTools console for details)`);
 			}
 
-			throw new Error(`GitHub returned HTTP ${res.status} for account "${account}".`);
+			throw new Error(`GitHub returned HTTP ${res.status} for account "${account}". (See DevTools console)`);
 		} catch (error) {
 			console.error(`[GitHubRegistryService] Failed to fetch repos for ${account}:`, error);
 			throw error;
