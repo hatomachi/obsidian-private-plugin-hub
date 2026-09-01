@@ -112,6 +112,7 @@ export class MarketModal extends Modal {
 		const actionsEl = controlsEl.createDiv({ cls: 'private-hub-actions' });
 
 		// Refresh Button
+		// Refresh Button
 		const refreshBtn = actionsEl.createEl('button', {
 			cls: 'mod-neutral private-hub-btn',
 			title: 'Check for updates'
@@ -120,7 +121,7 @@ export class MarketModal extends Modal {
 		refreshBtn.createSpan({ text: ' Refresh' });
 		refreshBtn.addEventListener('click', async () => {
 			refreshBtn.addClass('is-loading');
-			await this.loadRegistryData();
+			await this.loadRegistryData(true);
 			refreshBtn.removeClass('is-loading');
 		});
 
@@ -136,14 +137,14 @@ export class MarketModal extends Modal {
 	}
 
 	/**
-	 * Load registry data from remote server
+	 * Load registry and GitHub plugins from configured sources
 	 */
-	private async loadRegistryData() {
+	private async loadRegistryData(bypassCache = false) {
 		this.isLoading = true;
 		this.renderLoadingState();
 
 		try {
-			this.plugins = await this.registryService.fetchRegistry(this.settings.registryUrl);
+			this.plugins = await this.registryService.fetchAllPlugins(this.settings, bypassCache);
 			this.applyFilters();
 		} catch (error) {
 			this.renderErrorState((error as Error).message);
@@ -218,9 +219,22 @@ export class MarketModal extends Modal {
 		const errEl = this.listContainerEl.createDiv({ cls: 'private-hub-error' });
 		const errIcon = errEl.createDiv({ cls: 'private-hub-error-icon' });
 		setIcon(errIcon, 'alert-triangle');
-		errEl.createEl('h4', { text: 'Failed to connect to Private Registry' });
+		errEl.createEl('h4', { text: 'Failed to load plugins' });
 		errEl.createEl('p', { text: message });
-		errEl.createEl('p', { text: `Target URL: ${this.settings.registryUrl}`, cls: 'private-hub-url-hint' });
+
+		const sourcesList: string[] = [];
+		if (this.settings.githubSources && this.settings.githubSources.length > 0) {
+			sourcesList.push(`GitHub: ${this.settings.githubSources.join(', ')}`);
+		}
+		if (this.settings.registryUrl) {
+			sourcesList.push(`Registry: ${this.settings.registryUrl}`);
+		}
+
+		if (sourcesList.length > 0) {
+			errEl.createEl('p', { text: `Configured Sources: ${sourcesList.join(' | ')}`, cls: 'private-hub-url-hint' });
+		} else {
+			errEl.createEl('p', { text: 'No sources configured. Please configure GitHub accounts or Registry URL in Settings.', cls: 'private-hub-url-hint' });
+		}
 	}
 
 	/**
@@ -281,6 +295,10 @@ export class MarketModal extends Modal {
 			metaRow.createEl('span', { text: 'Disabled', cls: 'private-hub-badge badge-disabled' });
 		}
 
+		if (plugin.sourceType === 'github') {
+			metaRow.createEl('span', { text: 'GitHub', cls: 'private-hub-badge badge-github' });
+		}
+
 		// Description
 		card.createEl('p', { text: plugin.description, cls: 'private-hub-card-desc' });
 
@@ -298,6 +316,18 @@ export class MarketModal extends Modal {
 		// Right side buttons
 		const btnGroup = cardFooter.createDiv({ cls: 'private-hub-card-buttons' });
 
+		// GitHub repo link button
+		if (plugin.githubUrl) {
+			const ghBtn = btnGroup.createEl('button', {
+				cls: 'mod-neutral private-hub-action-btn-icon',
+				title: 'View repository on GitHub'
+			});
+			setIcon(ghBtn, 'github');
+			ghBtn.addEventListener('click', () => {
+				window.open(plugin.githubUrl, '_blank');
+			});
+		}
+
 		if (status === 'not_installed') {
 			const installBtn = btnGroup.createEl('button', {
 				text: 'Install',
@@ -306,7 +336,7 @@ export class MarketModal extends Modal {
 			installBtn.addEventListener('click', async () => {
 				installBtn.disabled = true;
 				installBtn.setText('Installing...');
-				const success = await this.installerService.installOrUpdatePlugin(plugin);
+				const success = await this.installerService.installOrUpdatePlugin(plugin, this.settings.requestMode);
 				if (success) {
 					this.applyFilters();
 				} else {
@@ -324,7 +354,7 @@ export class MarketModal extends Modal {
 			updateBtn.addEventListener('click', async () => {
 				updateBtn.disabled = true;
 				updateBtn.setText('Updating...');
-				const success = await this.installerService.installOrUpdatePlugin(plugin);
+				const success = await this.installerService.installOrUpdatePlugin(plugin, this.settings.requestMode);
 				if (success) {
 					this.applyFilters();
 				} else {
@@ -380,7 +410,7 @@ export class MarketModal extends Modal {
 
 		let successCount = 0;
 		for (const plugin of updatePlugins) {
-			const ok = await this.installerService.installOrUpdatePlugin(plugin);
+			const ok = await this.installerService.installOrUpdatePlugin(plugin, this.settings.requestMode);
 			if (ok) successCount++;
 		}
 

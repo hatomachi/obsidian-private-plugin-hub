@@ -1,11 +1,13 @@
 {
   "name": "obsidian-private-plugin-hub",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Private Plugin Hub for downloading and updating custom Obsidian plugins.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
-    "build": "tsc -noEmit && node esbuild.config.mjs production"
+    "build": "tsc -noEmit && node esbuild.config.mjs production",
+    "copy:vault": "mkdir -p /Users/s-ikari/work/playground/test-vault/.obsidian/plugins/obsidian-private-plugin-hub && cp main.js manifest.json styles.css /Users/s-ikari/work/playground/test-vault/.obsidian/plugins/obsidian-private-plugin-hub/",
+    "build:vault": "npm run build && npm run copy:vault"
   },
   "keywords": [
     "obsidian",

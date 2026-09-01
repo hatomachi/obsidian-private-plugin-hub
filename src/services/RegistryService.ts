@@ -1,5 +1,7 @@
-import { App, requestUrl } from 'obsidian';
-import { HubPlugin, RegistryManifest, PluginInstallStatus, InstalledPluginInfo } from '../types';
+import { App } from 'obsidian';
+import { HubPlugin, HubSettings, RegistryManifest, PluginInstallStatus, InstalledPluginInfo } from '../types';
+import { HttpClient } from './HttpClient';
+import { GitHubRegistryService } from './GitHubRegistryService';
 
 export class RegistryService {
 	private app: App;
@@ -9,22 +11,85 @@ export class RegistryService {
 	}
 
 	/**
+	 * Fetch all plugins from all configured sources (Registry JSON and GitHub accounts)
+	 */
+	async fetchAllPlugins(settings: HubSettings, bypassCache = false): Promise<HubPlugin[]> {
+		const pluginMap = new Map<string, HubPlugin>();
+		const errors: string[] = [];
+
+		// 1. Fetch from custom registryUrl if set
+		if (settings.registryUrl && settings.registryUrl.trim().length > 0) {
+			try {
+				const registryPlugins = await this.fetchRegistry(settings.registryUrl.trim(), settings.requestMode);
+				registryPlugins.forEach(p => {
+					p.sourceType = 'registry';
+					pluginMap.set(p.id, p);
+				});
+			} catch (e) {
+				console.warn('[PrivatePluginHub] Failed to fetch custom registry:', e);
+				errors.push(`Custom Registry: ${(e as Error).message}`);
+			}
+		}
+
+		// 2. Fetch from each GitHub source
+		if (settings.githubSources && settings.githubSources.length > 0) {
+			for (const source of settings.githubSources) {
+				const cleaned = source.trim();
+				if (!cleaned) continue;
+
+				try {
+					const ghPlugins = await GitHubRegistryService.fetchPluginsFromAccount(cleaned, settings, bypassCache);
+					ghPlugins.forEach(p => {
+						// If plugin ID not yet in map, or if remote version is newer
+						if (!pluginMap.has(p.id)) {
+							pluginMap.set(p.id, p);
+						} else {
+							const existing = pluginMap.get(p.id)!;
+							if (this.isVersionNewer(p.version, existing.version)) {
+								pluginMap.set(p.id, p);
+							}
+						}
+					});
+				} catch (e) {
+					console.warn(`[PrivatePluginHub] Failed to fetch plugins from GitHub source "${cleaned}":`, e);
+					errors.push(`GitHub (${cleaned}): ${(e as Error).message}`);
+				}
+			}
+		}
+
+		// If no sources at all were configured
+		const hasConfiguredSources = (settings.registryUrl && settings.registryUrl.trim().length > 0) ||
+			(settings.githubSources && settings.githubSources.some(s => s.trim().length > 0));
+
+		if (!hasConfiguredSources) {
+			throw new Error("No registry URL or GitHub sources configured. Please configure in settings.");
+		}
+
+		// If everything failed and no plugins were fetched, throw error with details
+		if (pluginMap.size === 0 && errors.length > 0) {
+			throw new Error(errors.join('\n'));
+		}
+
+		return Array.from(pluginMap.values());
+	}
+
+	/**
 	 * Fetch the remote registry manifest
 	 */
-	async fetchRegistry(registryUrl: string): Promise<HubPlugin[]> {
+	async fetchRegistry(registryUrl: string, requestMode: 'default' | 'direct' = 'default'): Promise<HubPlugin[]> {
 		if (!registryUrl) {
 			throw new Error("Registry URL is not configured.");
 		}
 
 		try {
-			const response = await requestUrl({
+			const response = await HttpClient.request({
 				url: registryUrl,
 				method: 'GET',
 				headers: {
 					'Cache-Control': 'no-cache',
 					'Pragma': 'no-cache'
 				}
-			});
+			}, requestMode);
 
 			if (response.status !== 200) {
 				throw new Error(`Failed to fetch registry (HTTP ${response.status})`);

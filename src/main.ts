@@ -29,7 +29,10 @@ export default class PrivatePluginHubPlugin extends Plugin {
 		this.addSettingTab(new SettingTab(this.app, this));
 
 		// Check updates on startup if enabled
-		if (this.settings.autoCheckUpdates && this.settings.registryUrl) {
+		const hasSources = (this.settings.registryUrl && this.settings.registryUrl.trim().length > 0) ||
+			(this.settings.githubSources && this.settings.githubSources.some(s => s.trim().length > 0));
+
+		if (this.settings.autoCheckUpdates && hasSources) {
 			this.app.workspace.onLayoutReady(() => {
 				this.checkForUpdatesOnStartup();
 			});
@@ -55,7 +58,7 @@ export default class PrivatePluginHubPlugin extends Plugin {
 	private async checkForUpdatesOnStartup() {
 		try {
 			const service = new RegistryService(this.app);
-			const plugins = await service.fetchRegistry(this.settings.registryUrl);
+			const plugins = await service.fetchAllPlugins(this.settings);
 			
 			const updates = plugins.filter(p => service.getPluginStatus(p) === 'update_available');
 			if (updates.length > 0) {
@@ -75,3 +78,4 @@ export default class PrivatePluginHubPlugin extends Plugin {
 		}
 	}
 }
+

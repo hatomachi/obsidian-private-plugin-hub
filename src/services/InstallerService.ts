@@ -1,5 +1,6 @@
-import { App, requestUrl, Notice } from 'obsidian';
+import { App, Notice } from 'obsidian';
 import { HubPlugin } from '../types';
+import { HttpClient } from './HttpClient';
 
 export class InstallerService {
 	private app: App;
@@ -19,7 +20,7 @@ export class InstallerService {
 	/**
 	 * Download and install or update a custom plugin
 	 */
-	async installOrUpdatePlugin(plugin: HubPlugin): Promise<boolean> {
+	async installOrUpdatePlugin(plugin: HubPlugin, requestMode: 'default' | 'direct' = 'default'): Promise<boolean> {
 		const pluginDir = this.getPluginPath(plugin.id);
 		const adapter = this.app.vault.adapter;
 
@@ -36,7 +37,7 @@ export class InstallerService {
 
 			// 2. Fetch manifest.json
 			const manifestUrl = `${baseUrl}manifest.json?t=${Date.now()}`;
-			const manifestRes = await requestUrl({ url: manifestUrl });
+			const manifestRes = await HttpClient.request({ url: manifestUrl }, requestMode);
 			if (manifestRes.status !== 200) {
 				throw new Error(`Failed to download manifest.json (HTTP ${manifestRes.status})`);
 			}
@@ -44,7 +45,7 @@ export class InstallerService {
 
 			// 3. Fetch main.js
 			const mainJsUrl = `${baseUrl}main.js?t=${Date.now()}`;
-			const mainJsRes = await requestUrl({ url: mainJsUrl });
+			const mainJsRes = await HttpClient.request({ url: mainJsUrl }, requestMode);
 			if (mainJsRes.status !== 200) {
 				throw new Error(`Failed to download main.js (HTTP ${mainJsRes.status})`);
 			}
@@ -53,7 +54,7 @@ export class InstallerService {
 			// 4. Fetch styles.css (Optional)
 			try {
 				const stylesUrl = `${baseUrl}styles.css?t=${Date.now()}`;
-				const stylesRes = await requestUrl({ url: stylesUrl });
+				const stylesRes = await HttpClient.request({ url: stylesUrl }, requestMode);
 				if (stylesRes.status === 200 && stylesRes.text) {
 					await adapter.write(`${pluginDir}/styles.css`, stylesRes.text);
 				}

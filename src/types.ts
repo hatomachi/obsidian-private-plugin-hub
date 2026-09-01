@@ -8,6 +8,8 @@ export interface HubPlugin {
 	icon?: string;
 	url: string; // Base URL where manifest.json, main.js, styles.css are hosted
 	readmeUrl?: string;
+	githubUrl?: string; // Web URL to GitHub repository if applicable
+	sourceType?: 'registry' | 'github';
 	downloads?: number;
 	updatedAt?: string;
 	tags?: string[];
@@ -32,12 +34,21 @@ export interface InstalledPluginInfo {
 
 export interface HubSettings {
 	registryUrl: string;
+	githubSources: string[];
+	filterTopics: string[];
+	filterPrefix: string;
 	autoCheckUpdates: boolean;
 	showExperimental: boolean;
+	requestMode: 'default' | 'direct';
 }
 
 export const DEFAULT_SETTINGS: HubSettings = {
-	registryUrl: "http://localhost:8888/hub/registry.json",
+	registryUrl: "",
+	githubSources: ["https://github.com/hatomachi"],
+	filterTopics: ["obsidian-plugin", "obsidian"],
+	filterPrefix: "obsidian-",
 	autoCheckUpdates: true,
-	showExperimental: false
+	showExperimental: false,
+	requestMode: 'default'
 };
+
