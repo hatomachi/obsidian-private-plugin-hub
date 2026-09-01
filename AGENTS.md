@@ -26,7 +26,26 @@ npm run build && mkdir -p /Users/s-ikari/work/playground/test-vault/.obsidian/pl
 
 ---
 
-## 2. コアアーキテクチャ & 設計方針
+## 2. リリース・タグ付けルール（重要）
+
+会社PCや他の環境では GitHub Releases（`releases/latest/download/...`）から最新成果物を取得・更新して動作確認や利用を行います。
+機能追加やバグ修正を行いリモートへ反映する際は、**必ずバージョン更新・コミット・タグプッシュ**を行ってください。
+
+### リリース手順
+1. `manifest.json` および `package.json` の `"version"` をインクリメント（例: `1.1.1`）
+2. ビルドを実行して `npm run build:vault` で動作確認
+3. 変更をコミット: `git commit -m "chore: release vX.Y.Z"`
+4. タグを作成してプッシュ:
+   ```bash
+   git tag vX.Y.Z
+   git push origin main
+   git push origin vX.Y.Z
+   ```
+5. GitHub Actions (`.github/workflows/build-release.yml`) により、GitHub Release（`main.js`, `manifest.json`, `styles.css`, `obsidian-private-plugin-hub.zip`）が自動作成・添付されます。
+
+---
+
+## 3. コアアーキテクチャ & 設計方針
 
 1. **GitHub Token不要（Unauthenticated API）アーキテクチャ**
    - リポジトリ探索は `https://api.github.com/users/{username}/repos`（または `/orgs/`）で 1 ユーザーあたり **たった 1 回** の API コールで最大 100 件取得。
