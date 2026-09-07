@@ -220,7 +220,16 @@ export class MarketModal extends Modal {
 		const errIcon = errEl.createDiv({ cls: 'private-hub-error-icon' });
 		setIcon(errIcon, 'alert-triangle');
 		errEl.createEl('h4', { text: 'Failed to load plugins' });
-		errEl.createEl('p', { text: message });
+		const msgEl = errEl.createEl('p', { cls: 'private-hub-error-message' });
+		msgEl.setText(message);
+
+		if (message.includes('レート制限') || message.includes('rate limit') || message.includes('403')) {
+			const hintBox = errEl.createDiv({ cls: 'private-hub-error-hint' });
+			hintBox.createEl('strong', { text: '💡 ヒント: ' });
+			hintBox.createSpan({
+				text: 'GitHub APIの未認証レート制限（60回/時）に達している可能性があります。しばらく待つか、設定画面で GitHub Personal Access Token (PAT) を設定すると上限を5,000回/時に拡大できます。詳細はDevToolsコンソール（Option+Cmd+I）をご確認ください。'
+			});
+		}
 
 		const sourcesList: string[] = [];
 		if (this.settings.githubSources && this.settings.githubSources.length > 0) {

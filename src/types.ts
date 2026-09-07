@@ -35,6 +35,7 @@ export interface InstalledPluginInfo {
 export interface HubSettings {
 	registryUrl: string;
 	githubSources: string[];
+	githubToken?: string;
 	filterTopics: string[];
 	filterPrefix: string;
 	autoCheckUpdates: boolean;
@@ -45,6 +46,7 @@ export interface HubSettings {
 export const DEFAULT_SETTINGS: HubSettings = {
 	registryUrl: "",
 	githubSources: ["https://github.com/hatomachi"],
+	githubToken: "",
 	filterTopics: ["obsidian-plugin", "obsidian"],
 	filterPrefix: "obsidian-",
 	autoCheckUpdates: true,

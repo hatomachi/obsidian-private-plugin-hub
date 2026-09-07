@@ -25,53 +25,112 @@ export class HttpClient {
 		}
 
 		if (response.status >= 400) {
-			this.logDiagnostic(options.url, mode, response);
+			this.logDiagnostic(options.url, mode, response, options);
 		}
 
 		return response;
 	}
 
 	/**
-	 * Output diagnostic log to DevTools console when HTTP request fails (status >= 400)
+	 * Case-insensitive header lookup helper
 	 */
-	private static logDiagnostic(url: string, mode: string, res: RequestUrlResponse): void {
+	static getHeader(headers: Record<string, string> = {}, name: string): string | undefined {
+		const target = name.toLowerCase();
+		for (const key of Object.keys(headers)) {
+			if (key.toLowerCase() === target) {
+				return headers[key];
+			}
+		}
+		return undefined;
+	}
+
+	/**
+	 * Output high-visibility diagnostic log to DevTools console when HTTP request fails (status >= 400)
+	 */
+	private static logDiagnostic(url: string, mode: string, res: RequestUrlResponse, options?: RequestUrlParam): void {
 		const headers = res.headers || {};
 		const text = res.text || '';
+		const method = options?.method || 'GET';
 
-		// Check GitHub API rate limit headers and body
-		const remaining = headers['x-ratelimit-remaining'];
-		const limit = headers['x-ratelimit-limit'];
-		const reset = headers['x-ratelimit-reset'];
-		const isRateLimit = remaining === '0' || text.includes('API rate limit exceeded');
+		// GitHub API rate limit headers (case-insensitive)
+		const remaining = this.getHeader(headers, 'x-ratelimit-remaining');
+		const limit = this.getHeader(headers, 'x-ratelimit-limit');
+		const reset = this.getHeader(headers, 'x-ratelimit-reset');
+		const used = this.getHeader(headers, 'x-ratelimit-used');
+		const isRateLimit = remaining === '0' ||
+			res.status === 429 ||
+			text.includes('API rate limit exceeded') ||
+			text.includes('rate limit');
 
-		// Check proxy headers and HTML block page
-		const serverHeader = headers['server'] || '';
-		const viaHeader = headers['via'] || '';
-		const contentType = headers['content-type'] || '';
-		const isHtmlBlock = contentType.includes('text/html') && (text.includes('Blocked') || text.includes('Forbidden') || text.includes('Filter') || text.includes('Policy') || text.includes('Proxy') || text.includes('Zscaler'));
+		// Proxy headers and HTML block page detection
+		const serverHeader = this.getHeader(headers, 'server') || '';
+		const viaHeader = this.getHeader(headers, 'via') || '';
+		const contentType = this.getHeader(headers, 'content-type') || '';
+		const isHtmlBlock = contentType.includes('text/html') && (
+			text.includes('Blocked') || text.includes('Forbidden') || text.includes('Filter') ||
+			text.includes('Policy') || text.includes('Proxy') || text.includes('Zscaler')
+		);
 		const isKnownProxy = /zscaler|squid|bluecoat|envoy|nginx|apache/i.test(serverHeader) || Boolean(viaHeader);
 
 		let cause = `HTTP ${res.status}`;
-		if (res.status === 403) {
-			if (isRateLimit) {
-				const resetTime = reset ? new Date(parseInt(reset, 10) * 1000).toLocaleTimeString() : 'unknown';
-				cause = `[GitHub API Rate Limit Exceeded] Remaining: 0 / ${limit || 60}, Resets at: ${resetTime}`;
-			} else if (isKnownProxy || isHtmlBlock) {
-				cause = `[Corporate Proxy / Security Filter Block] Server: "${serverHeader || 'unknown'}", Via: "${viaHeader || 'none'}"`;
-			} else {
-				cause = `[HTTP 403 Forbidden] Access denied or blocked by server/WAF.`;
+		let suggestion = 'Check network connection or server status.';
+		let resetSummary = '';
+
+		if (reset) {
+			const resetEpochMs = parseInt(reset, 10) * 1000;
+			if (!isNaN(resetEpochMs)) {
+				const resetDate = new Date(resetEpochMs);
+				const diffMs = resetEpochMs - Date.now();
+				const minutesLeft = Math.max(0, Math.ceil(diffMs / 60000));
+				resetSummary = `${resetDate.toLocaleTimeString()} (in ~${minutesLeft} min)`;
 			}
 		}
 
-		console.group(`[PrivatePluginHub:HTTP] HTTP ${res.status} on ${url} (Mode: ${mode})`);
-		console.warn(`Diagnosis: ${cause}`);
-		console.log('URL:', url);
-		console.log('Mode:', mode);
-		console.log('Status:', res.status);
-		console.log('Headers:', headers);
-		if (text) {
-			console.log('Body Preview:', text.length > 500 ? text.slice(0, 500) + '...' : text);
+		if (res.status === 403 || res.status === 429) {
+			if (isRateLimit) {
+				cause = `[GitHub API Rate Limit Exceeded] Rate limit reached (${remaining ?? '0'} / ${limit ?? '60'} remaining)`;
+				suggestion = `Wait until rate limit resets at ${resetSummary || 'next hour'} OR configure a GitHub Personal Access Token (PAT) in Settings to increase limit to 5,000 req/h.`;
+			} else if (text.includes('Bad credentials')) {
+				cause = `[GitHub Authentication Failed] Invalid or expired GitHub Personal Access Token.`;
+				suggestion = 'Verify or update your GitHub Token in Private Plugin Hub settings.';
+			} else if (isKnownProxy || isHtmlBlock) {
+				cause = `[Corporate Proxy / Security Filter Block] Blocked by proxy or security gateway (Server: "${serverHeader || 'unknown'}", Via: "${viaHeader || 'none'}").`;
+				suggestion = 'Switch Connection Mode to "Direct (Bypass System Proxy)" in plugin settings.';
+			} else {
+				cause = `[HTTP 403 Forbidden] Access denied or restricted by remote server/WAF.`;
+				suggestion = 'Check if repository or URL is accessible from browser, or if token permissions are sufficient.';
+			}
+		} else if (res.status === 404) {
+			cause = `[HTTP 404 Not Found] Target repository or endpoint does not exist.`;
+			suggestion = 'Confirm that the GitHub username/organization or repository name is spelled correctly.';
 		}
+
+		// Prepare response body preview
+		let bodyPreview = text.trim();
+		if (bodyPreview.length > 600) {
+			bodyPreview = bodyPreview.slice(0, 600) + '... (truncated)';
+		}
+
+		// 1. High-visibility console.error (guaranteed to be visible even with "Errors only" filter)
+		console.error(
+			`[PrivatePluginHub:HTTP] ❌ HTTP ${res.status} on ${method} ${url}\n` +
+			`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+			`📌 Cause: ${cause}\n` +
+			`🌐 Request: ${method} ${url} (Mode: ${mode})\n` +
+			(limit ? `⏱️ GitHub Rate Limit: Remaining ${remaining ?? '0'} / ${limit}${resetSummary ? ` (Resets at: ${resetSummary})` : ''}${used ? `, Used: ${used}` : ''}\n` : '') +
+			`💡 Suggestion: ${suggestion}\n` +
+			(bodyPreview ? `📄 Response Body:\n${bodyPreview}\n` : '') +
+			`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+		);
+
+		// 2. Expandable details group for full debugging inspection
+		console.groupCollapsed(`[PrivatePluginHub:HTTP] 🔍 Inspect Raw Response Details (${url})`);
+		console.log('Request URL:', url);
+		console.log('Request Method:', method);
+		console.log('Connection Mode:', mode);
+		console.log('Response Status:', res.status);
+		console.log('Response Headers:', headers);
+		console.log('Full Body:', text);
 		console.groupEnd();
 	}
 

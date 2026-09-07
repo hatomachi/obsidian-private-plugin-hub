@@ -88,6 +88,19 @@ export class SettingTab extends PluginSettingTab {
 					}
 				}));
 
+		new Setting(containerEl)
+			.setName('GitHub Personal Access Token (Optional)')
+			.setDesc('Optional GitHub Personal Access Token (Fine-grained or Classic PAT, read-only for public repos). Increases API rate limit from 60 to 5,000 requests/hour to prevent HTTP 403 rate limit errors.')
+			.addText(text => {
+				text.setPlaceholder('ghp_xxxxxxxxxxxx or github_pat_xxxxxxxxxxxx')
+					.setValue(this.plugin.settings.githubToken || '')
+					.onChange(async (value) => {
+						this.plugin.settings.githubToken = value.trim();
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.type = 'password';
+			});
+
 		// Filter rules for GitHub discovery
 		new Setting(containerEl)
 			.setName('Discovery Topic Tags')

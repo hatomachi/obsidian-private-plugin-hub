@@ -51,7 +51,7 @@ export class RegistryService {
 						}
 					});
 				} catch (e) {
-					console.warn(`[PrivatePluginHub] Failed to fetch plugins from GitHub source "${cleaned}":`, e);
+					console.error(`[PrivatePluginHub] Failed to fetch plugins from GitHub source "${cleaned}":`, e);
 					errors.push(`GitHub (${cleaned}): ${(e as Error).message}`);
 				}
 			}

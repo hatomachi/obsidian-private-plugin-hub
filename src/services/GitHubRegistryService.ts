@@ -88,7 +88,7 @@ export class GitHubRegistryService {
 		}
 
 		// 1. Fetch public repositories for this user (or org)
-		const repos = await this.fetchUserRepositories(account, settings.requestMode);
+		const repos = await this.fetchUserRepositories(account, settings);
 
 		// 2. Filter repositories matching plugin criteria
 		const candidateRepos = repos.filter(repo => {
@@ -141,17 +141,22 @@ export class GitHubRegistryService {
 	 */
 	private static async fetchUserRepositories(
 		account: string,
-		requestMode: 'default' | 'direct'
+		settings: HubSettings
 	): Promise<GitHubRepoItem[]> {
-		const headers = {
+		const headers: Record<string, string> = {
 			'Accept': 'application/vnd.github.v3+json',
 			'User-Agent': 'ObsidianPrivatePluginHub'
 		};
 
+		// Optional GitHub Personal Access Token (boosts limit from 60 to 5,000 req/h)
+		if (settings.githubToken && settings.githubToken.trim().length > 0) {
+			headers['Authorization'] = `Bearer ${settings.githubToken.trim()}`;
+		}
+
 		// Try user repos first
-		let userUrl = `https://api.github.com/users/${encodeURIComponent(account)}/repos?per_page=100&type=public&sort=updated`;
+		const userUrl = `https://api.github.com/users/${encodeURIComponent(account)}/repos?per_page=100&type=public&sort=updated`;
 		try {
-			const res = await HttpClient.request({ url: userUrl, headers }, requestMode);
+			const res = await HttpClient.request({ url: userUrl, headers }, settings.requestMode);
 			if (res.status === 200 && Array.isArray(res.json)) {
 				return res.json;
 			}
@@ -159,22 +164,46 @@ export class GitHubRegistryService {
 			// If 404, try organization repos
 			if (res.status === 404) {
 				const orgUrl = `https://api.github.com/orgs/${encodeURIComponent(account)}/repos?per_page=100&type=public&sort=updated`;
-				const orgRes = await HttpClient.request({ url: orgUrl, headers }, requestMode);
+				const orgRes = await HttpClient.request({ url: orgUrl, headers }, settings.requestMode);
 				if (orgRes.status === 200 && Array.isArray(orgRes.json)) {
 					return orgRes.json;
 				}
 			}
 
-			if (res.status === 403) {
-				const isRateLimit = res.headers['x-ratelimit-remaining'] === '0' || (res.text && res.text.includes('API rate limit exceeded'));
+			if (res.status === 403 || res.status === 429) {
+				const remaining = HttpClient.getHeader(res.headers, 'x-ratelimit-remaining');
+				const limit = HttpClient.getHeader(res.headers, 'x-ratelimit-limit');
+				const reset = HttpClient.getHeader(res.headers, 'x-ratelimit-reset');
+				const isRateLimit = remaining === '0' ||
+					res.status === 429 ||
+					(res.text && res.text.includes('API rate limit exceeded')) ||
+					(res.text && res.text.includes('rate limit'));
+
 				if (isRateLimit) {
-					const resetTime = res.headers['x-ratelimit-reset'] ? new Date(parseInt(res.headers['x-ratelimit-reset'], 10) * 1000).toLocaleTimeString() : '';
-					throw new Error(`GitHub API rate limit exceeded (60 req/h)${resetTime ? `, resets at ${resetTime}` : ''}. (See DevTools console)`);
+					let resetTime = '';
+					let minutesLeft = 0;
+					if (reset) {
+						const resetEpochMs = parseInt(reset, 10) * 1000;
+						if (!isNaN(resetEpochMs)) {
+							const resetDate = new Date(resetEpochMs);
+							minutesLeft = Math.max(0, Math.ceil((resetEpochMs - Date.now()) / 60000));
+							resetTime = `${resetDate.toLocaleTimeString()} (あと約${minutesLeft}分)`;
+						}
+					}
+					const limitText = limit ? `${limit}回/時` : '60回/時';
+					throw new Error(
+						`GitHub APIのレート制限（${limitText}）に達しました。${resetTime ? `解除予定: ${resetTime}。` : ''}設定でGitHub Personal Access Token (PAT) を登録すると上限を5,000回/時に増やせます。`
+					);
 				}
-				throw new Error(`GitHub returned HTTP 403 Forbidden for "${account}". Proxy block or access denied. (See DevTools console for details)`);
+
+				if (res.text && res.text.includes('Bad credentials')) {
+					throw new Error(`GitHub Tokenの認証に失敗しました。設定画面でPersonal Access Tokenを再確認してください。`);
+				}
+
+				throw new Error(`GitHub returned HTTP 403 Forbidden for "${account}". Proxy block or access denied. (DevToolsコンソールで詳細を確認できます)`);
 			}
 
-			throw new Error(`GitHub returned HTTP ${res.status} for account "${account}". (See DevTools console)`);
+			throw new Error(`GitHub returned HTTP ${res.status} for account "${account}". (DevToolsコンソールで詳細を確認できます)`);
 		} catch (error) {
 			console.error(`[GitHubRegistryService] Failed to fetch repos for ${account}:`, error);
 			throw error;
