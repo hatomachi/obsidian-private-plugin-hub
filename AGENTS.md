@@ -5,6 +5,11 @@ GitHub アカウント連携によるプラグイン自動検出、Releases か�
 
 AI エージェントがセッションを跨いで追加開発・バグ修正・機能拡張を行う際は、以下のルールおよび開発指針を遵守してください。
 
+> [!IMPORTANT]
+> **🎯 プロダクト作戦ノート & Next Actions (personal-vault)**:  
+> 本プロダクトの全体ビジョン、現在地、ユーザーからの日常フィードバック、直近の Next Actions は [obsidian-private-plugin-hub.md](file:///Users/s-ikari/work/personal-vault/10_%E8%81%B7%E4%BA%BA%E3%83%BB%E7%99%BA%E6%98%8E%E5%AE%B6/obsidian-private-plugin-hub.md) に一元管理されています。実装着手・機能完了時は必ず確認・更新してください。
+
+
 ---
 
 ## 1. ビルドおよび検証用 Vault への自動反映ルール（最重要）
